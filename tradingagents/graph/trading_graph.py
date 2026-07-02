@@ -372,7 +372,27 @@ class TradingAgentsGraph:
                 / "reports"
                 / f"{safe_ticker_component(ticker)}_{stamp}"
             )
-        return write_report_tree(final_state, ticker, save_path)
+        report_path = write_report_tree(final_state, ticker, save_path)
+
+        # Additively emit the BRE signal envelope alongside the report tree
+        # (BRE integration plan, Phase 2). Bolt-on serializer of the run's thesis
+        # + confidence for the downstream decision spine. Resilient by design:
+        # it must never break report writing, and save_reports is sometimes
+        # called unbound (self=None) with an explicit path, so we only emit on a
+        # real instance and getattr our way to config/memory_log.
+        config = getattr(self, "config", None)
+        if config is not None and config.get("emit_signal_envelope", True):
+            try:
+                from tradingagents.signal_envelope import build_envelope, write_envelope
+
+                envelope = build_envelope(
+                    final_state, config=config, memory_log=getattr(self, "memory_log", None)
+                )
+                write_envelope(envelope, save_path)
+            except Exception as e:
+                logger.warning("Could not emit signal envelope: %s", e)
+
+        return report_path
 
     def _run_graph(self, company_name, trade_date, asset_type: str = "stock"):
         """Execute the graph and write the resulting state to disk and memory log."""

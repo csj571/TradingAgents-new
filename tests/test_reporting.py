@@ -1,6 +1,7 @@
 """Report parity: the shared writer produces the report tree for the CLI and the
 programmatic API alike (#1037)."""
 
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -48,3 +49,37 @@ def test_save_reports_defaults_under_results_dir(tmp_path):
     assert out.exists()
     assert out.parent.parent.name == "reports"  # results_dir/reports/AAPL_<stamp>/...
     assert out.parent.name.startswith("AAPL_")
+
+
+@pytest.mark.unit
+def test_save_reports_emits_signal_envelope(tmp_path):
+    # On a real instance, save_reports also drops a valid signal envelope next
+    # to the report tree (BRE integration plan, Phase 2). memory_log=None is fine.
+    mock_self = SimpleNamespace(config={"emit_signal_envelope": True}, memory_log=None)
+    # A real run's final_state carries the ticker/date the envelope describes.
+    state = {**_state(), "company_of_interest": "AAPL", "trade_date": "2026-01-05"}
+    TradingAgentsGraph.save_reports(mock_self, state, "AAPL", save_path=tmp_path)
+    env_path = tmp_path / "signal_envelope.json"
+    assert env_path.exists()
+    env = json.loads(env_path.read_text())
+    assert env["schema"] == "bre-signal-envelope"
+    assert env["ticker"] == "AAPL"
+    assert env["asof"] == "2026-01-05"
+    assert env["evidence"]["validation"] is None  # downstream stage, not emitted here
+
+
+@pytest.mark.unit
+def test_save_reports_envelope_opt_out(tmp_path):
+    mock_self = SimpleNamespace(config={"emit_signal_envelope": False}, memory_log=None)
+    TradingAgentsGraph.save_reports(mock_self, _state(), "AAPL", save_path=tmp_path)
+    assert not (tmp_path / "signal_envelope.json").exists()
+    assert (tmp_path / "complete_report.md").exists()  # report tree still written
+
+
+@pytest.mark.unit
+def test_save_reports_unbound_skips_envelope(tmp_path):
+    # Unbound (self=None) explicit-path call: report tree written, envelope skipped
+    # (the serializer needs config/memory_log), and no crash.
+    out = TradingAgentsGraph.save_reports(None, _state(), "AAPL", save_path=tmp_path)
+    assert out == tmp_path / "complete_report.md"
+    assert not (tmp_path / "signal_envelope.json").exists()
