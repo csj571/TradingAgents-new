@@ -1,7 +1,8 @@
 # BRE Integration Plan — TradingAgents (v0.3.0) as a stage in the unified system
 
-**Status:** plan / roadmap. Nothing here is wired up yet — this document is the
-buildable path, not a description of existing behaviour.
+**Status:** in progress. **Phase 0 and Phase 1 are built** (offline, tested, CI-clean —
+see the per-phase Status lines below); Phases 2–4 remain roadmap. This document is
+kept honest as work lands.
 
 **Reads with:**
 - [`UNIFIED-SYSTEM-DESIGN.md`](../UNIFIED-SYSTEM-DESIGN.md) — the cross-repo north
@@ -91,6 +92,10 @@ Aligned to the unified design's four phases (§6), made concrete for this repo.
 Phase 0 is the prerequisite the upstream plan assumed away.
 
 ### Phase 0 — Offline replay resolver *(prerequisite — the missing backtest surface)*
+**Status: DONE** — `tradingagents/backtest/replay.py` (`resolve_signals` →
+`list[ResolvedSignal]` + `ResolveStats`), tests in `tests/test_backtest_replay.py`.
+Exposes both raw and alpha returns; skips + counts pending/malformed; offline.
+
 The one thing that must exist before calibration can score anything.
 
 - **Deliverable:** an offline module (proposed `tradingagents/backtest/` or
@@ -107,6 +112,14 @@ The one thing that must exist before calibration can score anything.
   on a synthetic log (mirror the existing offline test style; no keys/network).
 
 ### Phase 1 — Calibration ledger *(the `CALIBRATION_ON_TAURIC` realization; unified §3.2)*
+**Status: DONE** — vendored core `tradingagents/backtest/calibration.py` (verbatim,
+lint-excluded to stay in sync with upstream) + harness
+`tradingagents/backtest/calibration_report.py` (`build_report` / `format_report` /
+`python -m tradingagents.backtest.calibration_report --log …`), tests in
+`tests/test_calibration_report.py`. Locked: monotone tier→P(up) map, Hold
+excluded+counted, ≥50-signal curve gate, strict temporal-split recalibration
+(no look-ahead), non-fatal ECE gate. Fully offline; ruff-clean.
+
 - **Vendor** `bre-sim/engine/calibration.py` → `tradingagents/backtest/calibration.py`
   (numpy-only, torch-free; keep a docstring credit line pointing back to bre-sim so
   drift is visible). Add an offline unit test.
@@ -165,7 +178,8 @@ The one thing that must exist before calibration can score anything.
 
 **Open (answer before coding the relevant phase):**
 - Horizon `h`, and whether it ties to the run's rebalance cadence.
-- Whether Phase 0 lands as `tradingagents/backtest/` or `tradingagents/calibration/`.
+- ~~Whether Phase 0 lands as `tradingagents/backtest/` or `tradingagents/calibration/`.~~
+  **Resolved:** landed under `tradingagents/backtest/`.
 - Whether a numeric `confidence` field should later be *added* to `PortfolioDecision`
   (would upgrade the tier map to option b) — a prompt/schema change, out of scope now.
 
