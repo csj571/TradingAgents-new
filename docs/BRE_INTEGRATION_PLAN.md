@@ -1,7 +1,7 @@
 # BRE Integration Plan — TradingAgents (v0.3.0) as a stage in the unified system
 
-**Status:** in progress. **Phase 0 and Phase 1 are built** (offline, tested, CI-clean —
-see the per-phase Status lines below); Phases 2–4 remain roadmap. This document is
+**Status:** in progress. **Phases 0, 1, and 2 are built** (offline, tested, CI-clean —
+see the per-phase Status lines below); Phases 3–4 remain roadmap. This document is
 kept honest as work lands.
 
 **Reads with:**
@@ -144,6 +144,16 @@ excluded+counted, ≥50-signal curve gate, strict temporal-split recalibration
   before a curve is drawn (below that: raw Brier + "sample too small" note).
 
 ### Phase 2 — Emit the signal envelope *(unified §2, §3.5)*
+**Status: DONE** — `tradingagents/signal_envelope.py` (`build_envelope` /
+`write_envelope`, schema `bre-signal-envelope` v0.1.0), emitted as
+`signal_envelope.json` alongside the report tree via a resilient, config-gated
+(`emit_signal_envelope`) hook in `TradingAgentsGraph.save_reports`. Tests in
+`tests/test_signal_envelope.py` (+ hook cases in `tests/test_reporting.py`).
+This stage fills only what it owns (thesis text, tier-map `estimate`,
+`confidence_raw`, Platt `confidence_calibrated` from history); downstream-owned
+fields (regime, uncertainty split, `action` gate, `evidence.validation`) are
+`None` with notes — nothing invented. Fully offline; ruff-clean.
+
 - Add an adapter that serializes each `PortfolioDecision` (+ bull/bear spread + the
   calibrated confidence from Phase 1) into the signal-envelope JSON of §3.
 - Keep it a **thin adapter** around the graph output — this repo is an upstream
