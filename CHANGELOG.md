@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Breaking changes within the 0.x line are called out explicitly.
 
+## [Unreleased]
+
+### Added
+
+- **Offline rating-calibration report** (`tradingagents.eval`). Scores the
+  5-tier ratings recorded in the persistent memory log against realized alpha:
+  `python -m tradingagents.eval.calibration_report` emits Brier score + Murphy
+  decomposition, ECE/MCE raw and recalibrated (Platt or isotonic, fit on a
+  leakage-free temporal split), and reliability-curve data, with a min-sample
+  guard and a non-fatal ECE gate. Fully offline — no LLM, no network. The
+  scorer (`tradingagents/eval/calibration.py`) is vendored from
+  `csj571/bre-sim` `engine/calibration.py`; a monotone rating→probability
+  prior map (`RATING_PRIOR_PROB`) now lives beside `RATINGS_5_TIER`. `numpy`
+  is declared as an explicit dependency (previously transitive via pandas).
+
 ## [0.3.0] — 2026-06-22
 
 Stabilization and extensibility release: a CI gate, a unified verified

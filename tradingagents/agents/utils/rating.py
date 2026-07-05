@@ -20,6 +20,20 @@ RATINGS_5_TIER: tuple[str, ...] = (
 
 _RATING_SET = {r.lower() for r in RATINGS_5_TIER}
 
+# Monotone prior map: rating -> P(positive alpha over the entry's holding
+# window). These constants are *priors*, not truth — the calibration report
+# (tradingagents/eval/) fits Platt/isotonic recalibrators that learn the real
+# mapping from resolved outcomes, so only the ordering (monotone in bullishness)
+# matters here. Lives beside RATINGS_5_TIER so the scale and its probability
+# map cannot drift apart.
+RATING_PRIOR_PROB: dict[str, float] = {
+    "Buy": 0.75,
+    "Overweight": 0.60,
+    "Hold": 0.50,
+    "Underweight": 0.40,
+    "Sell": 0.25,
+}
+
 # Matches "Rating: X" / "rating - X" / "Rating: **X**" — tolerates markdown
 # bold wrappers and either a colon or hyphen separator.
 _RATING_LABEL_RE = re.compile(r"rating.*?[:\-][\s*]*(\w+)", re.IGNORECASE)
